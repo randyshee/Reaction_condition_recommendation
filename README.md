@@ -14,6 +14,8 @@ Creating one hot vectors for catalysts, solvents and reagents
 ## Model building and training
 train_model_c_s_r_deploy.py includes model building and training. As described in the paper, the model takes a hierarchical structure and predicts up to one catalyst, two solvents and two reagents and temperature of a reaction. The trained model is stored separately at https://figshare.com/s/e792359b2ce5e1c1a31f, since the file is too large for github.
 
+Download all files and put them in the NeuralNet_Cont_Model folder.
+
 ## Testing with trained model
 neuralnetwork.py is a script that uses the trained model to predict conditions for given organic reactions. It defines a NeuralNetContextRecommender class that can predict the conditions given the SMILES of the reactants and product. A user friendly version of the model is available at http://askcos.mit.edu/context.
 

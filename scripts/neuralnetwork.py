@@ -111,11 +111,11 @@ class NeuralNetContextRecommender():
         with open(c1_dict_file, "rb") as C1_DICT_F:
             self.c1_dict = pickle.load(C1_DICT_F)
 
-        self.inverse_c1_dict = {v: k for k,v in self.c1_dict.iteritems()}
-        self.inverse_s1_dict = {v: k for k,v in self.s1_dict.iteritems()}
-        self.inverse_s2_dict = {v: k for k,v in self.s2_dict.iteritems()}
-        self.inverse_r1_dict = {v: k for k,v in self.r1_dict.iteritems()}
-        self.inverse_r2_dict = {v: k for k,v in self.r2_dict.iteritems()}
+        self.inverse_c1_dict = {v: k for k,v in self.c1_dict.items()}
+        self.inverse_s1_dict = {v: k for k,v in self.s1_dict.items()}
+        self.inverse_s2_dict = {v: k for k,v in self.s2_dict.items()}
+        self.inverse_r1_dict = {v: k for k,v in self.r1_dict.items()}
+        self.inverse_r2_dict = {v: k for k,v in self.r2_dict.items()}
         
         self.c1_dim = self.nnModel.input_shape[2][1]
         self.r1_dim = self.nnModel.input_shape[3][1]
