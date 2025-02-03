@@ -12,13 +12,11 @@ Counting the frequencies of catalysts, solvents and reagents and truncate based 
 Creating one hot vectors for catalysts, solvents and reagents
 
 ## Model building and training
-train_model_c_s_r_deploy.py includes model building and training. As described in the paper, the model takes a hierarchical structure and predicts up to one catalyst, two solvents and two reagents and temperature of a reaction. 
+train_model_c_s_r_deploy.py includes model building and training. As described in the paper, the model takes a hierarchical structure and predicts up to one catalyst, two solvents and two reagents and temperature of a reaction. The trained model is stored separately at https://figshare.com/s/e792359b2ce5e1c1a31f, since the file is too large for github.
+
+Download all files and put them in the NeuralNet_Cont_Model folder.
 
 ## Testing with trained model
 neuralnetwork.py is a script that uses the trained model to predict conditions for given organic reactions. It defines a NeuralNetContextRecommender class that can predict the conditions given the SMILES of the reactants and product. A user friendly version of the model is available at http://askcos.mit.edu/context.
 
 results_analysis_with_null_model_deploy.py is the script used for generating the quantitative statistics in the paper.
-
-## My Modifications for `tensorflow==2.18.0`
-
-The trained model (now for `tensorflow==2.18.0`) is no longer stored at https://figshare.com/s/e792359b2ce5e1c1a31f; the necessary files will be uploaded to another figshare link. The `model.h5` file contains the model architecture and weights, and was created after loading the model in `tensorflow==2.12.0` using the original figshare files.
