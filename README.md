@@ -1,3 +1,5 @@
+This branch is for `tensorflow==2.12.0`
+
 # Reaction condition recommendation
 
 This is the code for data preprocessing, model training and evaluation described in the paper "Using Machine Learning to Predict Suitable Conditions for Organic Reactions".
