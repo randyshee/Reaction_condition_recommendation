@@ -1,5 +1,7 @@
 import numpy as np
-from keras.models import model_from_json
+# from keras.models import model_from_json
+from keras.models import load_model
+import tensorflow as tf
 from keras import backend as K
 from scipy import stats
 import pickle
@@ -71,7 +73,7 @@ class NeuralNetContextRecommender():
 
         print('Nerual network context recommender has been loaded.')
 
-    def load_nn_model(self, model_path="", info_path="", weights_path=""):
+    def load_nn_model(self, model_path="", info_path=""):
 
         if not model_path:
             print('Cannot load neural net context recommender without a specific path to the model. Exiting...')
@@ -80,14 +82,15 @@ class NeuralNetContextRecommender():
 
         ###load model##############
         # load json and create model
-        K.set_learning_phase(0)
-        json_file = open(model_path, 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
+        # K.set_learning_phase(0)
+        # json_file = open(model_path, 'r')
+        # loaded_model_json = json_file.read()
+        # json_file.close()
 
-        self.nnModel = model_from_json(loaded_model_json)
+        # self.nnModel = model_from_json(loaded_model_json)
+        self.nnModel = load_model(model_path)
         # load weights into new model
-        self.nnModel.load_weights(weights_path)
+        # self.nnModel.load_weights(weights_path)
         # get fp_size based on the model
         self.fp_size = self.nnModel.input_shape[0][1]
         r1_dict_file = info_path + "r1_dict.pickle"
@@ -135,13 +138,20 @@ class NeuralNetContextRecommender():
         r2_output = self.nnModel.get_layer('r2')
         T_output = self.nnModel.get_layer('T')
 
-        self.fp_func = K.function(self.nnModel.inputs, [fp_transform_layer.output])
-        self.c1_func = K.function([fp_transform_layer.output], [c1_output.output])
-        self.s1_func = K.function([fp_transform_layer.output,c1_input_layer.output], [s1_output.output])
-        self.s2_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output], [s2_output.output])
-        self.r1_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output], [r1_output.output])
-        self.r2_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output,r1_input_layer.output], [r2_output.output])
-        self.T_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output,r1_input_layer.output,r2_input_layer.output], [T_output.output])
+        # self.fp_func = K.function(self.nnModel.inputs, [fp_transform_layer.output])
+        # self.c1_func = K.function([fp_transform_layer.output], [c1_output.output])
+        # self.s1_func = K.function([fp_transform_layer.output,c1_input_layer.output], [s1_output.output])
+        # self.s2_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output], [s2_output.output])
+        # self.r1_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output], [r1_output.output])
+        # self.r2_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output,r1_input_layer.output], [r2_output.output])
+        # self.T_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output,r1_input_layer.output,r2_input_layer.output], [T_output.output])
+        self.fp_func = tf.keras.Model(inputs=self.nnModel.inputs, outputs=fp_transform_layer.output)
+        self.c1_func = tf.keras.Model(inputs=fp_transform_layer.output, outputs=c1_output.output)
+        self.s1_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output], outputs=s1_output.output)
+        self.s2_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output, self.nnModel.get_layer('input_s1').output], outputs=s2_output.output)
+        self.r1_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output, self.nnModel.get_layer('input_s1').output, self.nnModel.get_layer('input_s2').output], outputs=r1_output.output)
+        self.r2_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output, self.nnModel.get_layer('input_s1').output, self.nnModel.get_layer('input_s2').output, self.nnModel.get_layer('input_r1').output], outputs=r2_output.output)
+        self.T_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output, self.nnModel.get_layer('input_s1').output, self.nnModel.get_layer('input_s2').output, self.nnModel.get_layer('input_r1').output, self.nnModel.get_layer('input_r2').output], outputs=T_output.output)
 
     def load_predictor(self, userInput):
         """Loads the predictor based on user input"""
@@ -262,77 +272,80 @@ class NeuralNetContextRecommender():
         if c1_input_user == []:
             c1_inputs = fp_trans
             c1_pred = self.c1_func(c1_inputs)
-            c1_cdts = c1_pred[0][0].argsort()[-c1_rank_thres:][::-1]
+            c1_cdts = tf.argsort(c1_pred[0])[-c1_rank_thres:][::-1]
         else:
             c1_cdts = np.nonzero(c1_input_user)[0]
         # find the name of catalyst
-        for c1_cdt in c1_cdts:
+        for c1_cdt in c1_cdts.numpy():
             c1_name = self.c1_dict[c1_cdt]
             c1_input = np.zeros([1, self.c1_dim])
             c1_input[0, c1_cdt] = 1
+            c1_input = tf.convert_to_tensor(c1_input)
             if c1_input_user == []:
-                c1_sc = c1_pred[0][0][c1_cdt]
+                c1_sc = c1_pred[0][c1_cdt]
             else:
                 c1_sc = 1
             if s1_input_user == []:
-                s1_inputs = [fp_trans[0],c1_input]
+                s1_inputs = [fp_trans,c1_input]
                 s1_pred = self.s1_func(s1_inputs)
-                s1_cdts = s1_pred[0][0].argsort()[-s1_rank_thres:][::-1]
+                s1_cdts = tf.argsort(s1_pred[0])[-s1_rank_thres:][::-1]
             else:
                 s1_cdts = np.nonzero(s1_input_user)[0]
-            for s1_cdt in s1_cdts:
+            for s1_cdt in s1_cdts.numpy():
                 s1_name = self.s1_dict[s1_cdt]
                 s1_input = np.zeros([1, self.s1_dim])
                 s1_input[0, s1_cdt] = 1
+                s1_input = tf.convert_to_tensor(s1_input)
                 if s1_input_user == []:
-                    s1_sc = s1_pred[0][0][s1_cdt]
+                    s1_sc = s1_pred[0][s1_cdt]
                 else:
                     s1_sc = 1
                 if s2_input_user == []:
-                    s2_inputs = [fp_trans[0], c1_input, s1_input]
+                    s2_inputs = [fp_trans, c1_input, s1_input]
                     s2_pred = self.s2_func(s2_inputs)
-                    s2_cdts = s2_pred[0][0].argsort()[-s2_rank_thres:][::-1]
+                    s2_cdts = tf.argsort(s2_pred[0])[-s2_rank_thres:][::-1]
                 else:
                     s2_cdts = np.nonzero(s2_input_user)[0]
-                for s2_cdt in s2_cdts:
+                for s2_cdt in s2_cdts.numpy():
                     s2_name = self.s2_dict[s2_cdt]
                     s2_input = np.zeros([1, self.s2_dim])
                     s2_input[0, s2_cdt] = 1
+                    s2_input = tf.convert_to_tensor(s2_input)
                     if s2_input_user == []:
-                        s2_sc = s2_pred[0][0][s2_cdt]
+                        s2_sc = s2_pred[0][s2_cdt]
                     else:
                         s2_sc = 1
                     if r1_input_user == []:
-                        r1_inputs = [fp_trans[0], c1_input, s1_input, s2_input]
+                        r1_inputs = [fp_trans, c1_input, s1_input, s2_input]
                         r1_pred = self.r1_func(r1_inputs)
-                        r1_cdts = r1_pred[0][
-                            0].argsort()[-r1_rank_thres:][::-1]
+                        r1_cdts = tf.argsort(r1_pred[0])[-r1_rank_thres:][::-1]
                     else:
                         r1_cdts = np.nonzero(r1_input_user)[0]
-                    for r1_cdt in r1_cdts:
+                    for r1_cdt in r1_cdts.numpy():
                         r1_name = self.r1_dict[r1_cdt]
                         r1_input = np.zeros([1, self.r1_dim])
                         r1_input[0, r1_cdt] = 1
+                        r1_input = tf.convert_to_tensor(r1_input)
                         if r1_input_user == []:
-                            r1_sc = r1_pred[0][0][r1_cdt]
+                            r1_sc = r1_pred[0][r1_cdt]
                         else:
                             r1_sc = 1
                         if r2_input_user == []:
-                            r2_inputs = [fp_trans[0], c1_input, s1_input, s2_input, r1_input]
+                            r2_inputs = [fp_trans, c1_input, s1_input, s2_input, r1_input]
                             r2_pred = self.r2_func(r2_inputs)
-                            r2_cdts = r2_pred[0][
-                                0].argsort()[-r2_rank_thres:][::-1]
+                            r2_cdts = tf.argsort(r2_pred[0])[-r2_rank_thres:][::-1]
                         else:
                             r2_cdts = np.nonzero(r2_input_user)[0]
-                        for r2_cdt in r2_cdts:
+                        for r2_cdt in r2_cdts.numpy():
                             r2_name = self.r2_dict[r2_cdt]
                             r2_input = np.zeros([1, self.r2_dim])
                             r2_input[0, r2_cdt] = 1
+                            r2_input = tf.convert_to_tensor(r2_input)
                             if r2_input_user == []:
-                                r2_sc = r2_pred[0][0][r2_cdt]
+                                r2_sc = r2_pred[0][r2_cdt]
                             else:
                                 r2_sc = 1
-                            T_inputs = [fp_trans[0], c1_input, s1_input, s2_input, r1_input, r2_input]
+                            T_inputs = [fp_trans, c1_input, s1_input, s2_input, r1_input, r2_input]
                             T_pred = self.T_func(T_inputs)
                             # print(c1_name,s1_name,s2_name,r1_name,r2_name)
                             cat_name = [c1_name]
@@ -348,11 +361,11 @@ class NeuralNetContextRecommender():
                             #     cat_name = [cat for cat in cat_name if 'Reaxys' not in cat]
                             ##for testing purpose only, output order as training
                             if return_categories_only:
-                                context_combos.append([c1_cdt,s1_cdt,s2_cdt,r1_cdt,r2_cdt,T_pred[0][0][0]])
+                                context_combos.append([c1_cdt,s1_cdt,s2_cdt,r1_cdt,r2_cdt,T_pred[0][0]])
                             ## esle ouptupt format compatible with the overall framework
                             else:
                                 context_combos.append(
-                                    [float(T_pred[0][0][0]), '.'.join(slv_name), '.'.join(rgt_name), '.'.join(cat_name), np.nan, np.nan])
+                                    [float(T_pred[0][0]), '.'.join(slv_name), '.'.join(rgt_name), '.'.join(cat_name), np.nan, np.nan])
 
                             context_combo_scores.append(
                                 c1_sc*s1_sc*s2_sc*r1_sc*r2_sc)
