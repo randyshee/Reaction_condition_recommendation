@@ -1,6 +1,7 @@
 import numpy as np
 # from keras.models import model_from_json
 from keras.models import load_model
+import tensorflow as tf
 from keras import backend as K
 from scipy import stats
 import pickle
@@ -137,13 +138,20 @@ class NeuralNetContextRecommender():
         r2_output = self.nnModel.get_layer('r2')
         T_output = self.nnModel.get_layer('T')
 
-        self.fp_func = K.function(self.nnModel.inputs, [fp_transform_layer.output])
-        self.c1_func = K.function([fp_transform_layer.output], [c1_output.output])
-        self.s1_func = K.function([fp_transform_layer.output,c1_input_layer.output], [s1_output.output])
-        self.s2_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output], [s2_output.output])
-        self.r1_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output], [r1_output.output])
-        self.r2_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output,r1_input_layer.output], [r2_output.output])
-        self.T_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output,r1_input_layer.output,r2_input_layer.output], [T_output.output])
+        # self.fp_func = K.function(self.nnModel.inputs, [fp_transform_layer.output])
+        # self.c1_func = K.function([fp_transform_layer.output], [c1_output.output])
+        # self.s1_func = K.function([fp_transform_layer.output,c1_input_layer.output], [s1_output.output])
+        # self.s2_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output], [s2_output.output])
+        # self.r1_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output], [r1_output.output])
+        # self.r2_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output,r1_input_layer.output], [r2_output.output])
+        # self.T_func = K.function([fp_transform_layer.output,c1_input_layer.output,s1_input_layer.output, s2_input_layer.output,r1_input_layer.output,r2_input_layer.output], [T_output.output])
+        self.fp_func = tf.keras.Model(inputs=self.nnModel.inputs, outputs=fp_transform_layer.output)
+        self.c1_func = tf.keras.Model(inputs=fp_transform_layer.output, outputs=c1_output.output)
+        self.s1_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output], outputs=s1_output.output)
+        self.s2_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output, self.nnModel.get_layer('input_s1').output], outputs=s2_output.output)
+        self.r1_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output, self.nnModel.get_layer('input_s1').output, self.nnModel.get_layer('input_s2').output], outputs=r1_output.output)
+        self.r2_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output, self.nnModel.get_layer('input_s1').output, self.nnModel.get_layer('input_s2').output, self.nnModel.get_layer('input_r1').output], outputs=r2_output.output)
+        self.T_func = tf.keras.Model(inputs=[fp_transform_layer.output, self.nnModel.get_layer('input_c1').output, self.nnModel.get_layer('input_s1').output, self.nnModel.get_layer('input_s2').output, self.nnModel.get_layer('input_r1').output, self.nnModel.get_layer('input_r2').output], outputs=T_output.output)
 
     def load_predictor(self, userInput):
         """Loads the predictor based on user input"""
