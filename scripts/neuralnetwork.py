@@ -1,5 +1,6 @@
 import numpy as np
-from keras.models import model_from_json
+# from keras.models import model_from_json
+from keras.models import load_model
 from keras import backend as K
 from scipy import stats
 import pickle
@@ -80,14 +81,15 @@ class NeuralNetContextRecommender():
 
         ###load model##############
         # load json and create model
-        K.set_learning_phase(0)
-        json_file = open(model_path, 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
+        # K.set_learning_phase(0)
+        # json_file = open(model_path, 'r')
+        # loaded_model_json = json_file.read()
+        # json_file.close()
 
-        self.nnModel = model_from_json(loaded_model_json)
+        # self.nnModel = model_from_json(loaded_model_json)
+        self.nnModel = load_model(model_path)
         # load weights into new model
-        self.nnModel.load_weights(weights_path)
+        # self.nnModel.load_weights(weights_path)
         # get fp_size based on the model
         self.fp_size = self.nnModel.input_shape[0][1]
         r1_dict_file = info_path + "r1_dict.pickle"
