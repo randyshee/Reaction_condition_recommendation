@@ -73,7 +73,7 @@ class NeuralNetContextRecommender():
 
         print('Nerual network context recommender has been loaded.')
 
-    def load_nn_model(self, model_path="", info_path="", weights_path=""):
+    def load_nn_model(self, model_path="", info_path=""):
 
         if not model_path:
             print('Cannot load neural net context recommender without a specific path to the model. Exiting...')
